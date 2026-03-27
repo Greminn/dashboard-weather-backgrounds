@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stormy</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+
+  body {
+    background: #060810;
+    overflow: hidden;
+  }
+
+  canvas#rain { position: absolute; top:0; left:0; width:100%; height:100%; z-index:2; }
+
+  #sky {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, #060810 0%, #0e1625 40%, #1a2438 100%);
+    z-index: 0;
+    transition: background 0.05s;
+  }
+
+  #lightning-flash {
+    position: absolute; inset: 0;
+    background: rgba(180,200,255,0);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  #bolt-canvas { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+
+  .cloud-dark {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(20,25,40,0.9);
+    filter: blur(12px);
+    z-index: 1;
+  }
+
+  .mist {
+    position: absolute;
+    bottom: 0; left: 0; right: 0; height: 25%;
+    background: linear-gradient(to top, rgba(30,45,70,0.4), transparent);
+    z-index: 4;
+    animation: mistPulse 6s ease-in-out infinite alternate;
+  }
+
+  @keyframes mistPulse {
+    0%   { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <div id="sky"></div>
+  <div id="lightning-flash"></div>
+  <canvas id="bolt-canvas"></canvas>
+  <canvas id="rain"></canvas>
+  <div class="mist"></div>
+
+  <script>
+    // -- Dark clouds --
+    const cloudData = [
+      { top:'-5%', left:'-10%', w:500, h:200 },
+      { top:'5%',  left:'20%',  w:600, h:250 },
+      { top:'-8%', left:'55%',  w:450, h:180 },
+      { top:'10%', left:'75%',  w:380, h:160 },
+      { top:'18%', left:'30%',  w:500, h:200 },
+    ];
+    cloudData.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'cloud-dark';
+      el.style.cssText = `top:${d.top};left:${d.left};width:${d.w}px;height:${d.h}px;`;
+      document.body.appendChild(el);
+    });
+
+    // -- Rain --
+    const rainCanvas = document.getElementById('rain');
+    const rCtx = rainCanvas.getContext('2d');
+    function resizeRain() {
+      rainCanvas.width = window.innerWidth;
+      rainCanvas.height = window.innerHeight;
+    }
+    resizeRain();
+    window.addEventListener('resize', resizeRain);
+
+    const drops = [];
+    for (let i = 0; i < 280; i++) {
+      drops.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        len: 14 + Math.random() * 20,
+        speed: 12 + Math.random() * 10,
+        opacity: 0.15 + Math.random() * 0.4,
+        wind: 0.5
+      });
+    }
+
+    function drawRain() {
+      rCtx.clearRect(0, 0, rainCanvas.width, rainCanvas.height);
+      drops.forEach(d => {
+        rCtx.strokeStyle = `rgba(150,180,220,${d.opacity})`;
+        rCtx.lineWidth = 0.8;
+        rCtx.beginPath();
+        rCtx.moveTo(d.x, d.y);
+        rCtx.lineTo(d.x + d.len * d.wind, d.y + d.len);
+        rCtx.stroke();
+        d.y += d.speed; d.x += d.speed * d.wind;
+        if (d.y > rainCanvas.height + 30 || d.x > rainCanvas.width + 30) {
+          d.y = -20; d.x = Math.random() * rainCanvas.width;
+        }
+      });
+      requestAnimationFrame(drawRain);
+    }
+    drawRain();
+
+    // -- Lightning --
+    const boltCanvas = document.getElementById('bolt-canvas');
+    const bCtx = boltCanvas.getContext('2d');
+    const flash = document.getElementById('lightning-flash');
+
+    function resizeBolt() {
+      boltCanvas.width = window.innerWidth;
+      boltCanvas.height = window.innerHeight;
+    }
+    resizeBolt();
+    window.addEventListener('resize', resizeBolt);
+
+    function drawBolt(x, y, angle, length, depth) {
+      if (depth === 0 || length < 10) return;
+      const rad = angle * Math.PI / 180;
+      const nx = x + Math.cos(rad) * length;
+      const ny = y + Math.sin(rad) * length;
+
+      bCtx.beginPath();
+      bCtx.moveTo(x, y);
+      bCtx.lineTo(nx, ny);
+      bCtx.strokeStyle = `rgba(200,220,255,${depth / 5})`;
+      bCtx.lineWidth = depth * 0.8;
+      bCtx.shadowColor = 'rgba(150,180,255,0.9)';
+      bCtx.shadowBlur = 12;
+      bCtx.stroke();
+
+      const branch = Math.random() < 0.4;
+      drawBolt(nx, ny, angle + (Math.random() * 30 - 15), length * 0.75, depth - 1);
+      if (branch) drawBolt(nx, ny, angle + (Math.random() * 60 - 30), length * 0.5, depth - 2);
+    }
+
+    function strike() {
+      bCtx.clearRect(0, 0, boltCanvas.width, boltCanvas.height);
+      const x = boltCanvas.width * (0.2 + Math.random() * 0.6);
+      drawBolt(x, 0, 85 + (Math.random() * 20 - 10), 80, 5);
+
+      // Flash
+      flash.style.background = 'rgba(180,200,255,0.25)';
+      setTimeout(() => { flash.style.background = 'rgba(180,200,255,0)'; }, 60);
+      setTimeout(() => { flash.style.background = 'rgba(180,200,255,0.12)'; }, 100);
+      setTimeout(() => { flash.style.background = 'rgba(180,200,255,0)'; }, 160);
+
+      // Fade bolt
+      setTimeout(() => {
+        bCtx.clearRect(0, 0, boltCanvas.width, boltCanvas.height);
+      }, 200);
+
+      // Schedule next strike
+      const next = 3000 + Math.random() * 8000;
+      setTimeout(strike, next);
+    }
+
+    setTimeout(strike, 1500);
+  </script>
+</body>
+</html>

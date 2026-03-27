@@ -1,0 +1,9 @@
+{
+  "name": "Dashboard Weather Backgrounds",
+  "description": "Animated weather backgrounds for Home Assistant dashboards, driven by a weather entity.",
+  "documentation": "https://github.com/Greminn/dashboard-weather-backgrounds",
+  "homeassistant": "2024.1.0",
+  "filename": "dashboard-weather-backgrounds.js",
+  "content_in_root": false,
+  "render_readme": true
+}

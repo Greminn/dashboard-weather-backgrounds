@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foggy</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+
+  body {
+    background: linear-gradient(180deg, #0c1018 0%, #1a2030 50%, #252e40 100%);
+  }
+
+  .fog-layer {
+    position: absolute;
+    left: -20%; width: 140%;
+    border-radius: 50%;
+    filter: blur(40px);
+    will-change: transform, opacity;
+  }
+
+  @keyframes fogDrift1 { 0%,100% { transform: translateX(0) scaleY(1);    opacity:0.7; }
+                          50%    { transform: translateX(6%) scaleY(1.05); opacity:1;   } }
+  @keyframes fogDrift2 { 0%,100% { transform: translateX(0) scaleY(1);    opacity:0.6; }
+                          50%    { transform: translateX(-5%) scaleY(0.95); opacity:0.9; } }
+  @keyframes fogDrift3 { 0%,100% { transform: translateX(0);  opacity:0.5; }
+                          50%    { transform: translateX(8%);  opacity:0.8; } }
+
+  .particles-canvas {
+    position: absolute; inset: 0;
+  }
+</style>
+</head>
+<body>
+  <canvas class="particles-canvas" id="particles"></canvas>
+
+  <script>
+    // Fog layers
+    const layers = [
+      { top: '60%', h: 300, color: 'rgba(130,145,170,0.35)', anim: 'fogDrift1', dur: 18 },
+      { top: '40%', h: 250, color: 'rgba(110,125,150,0.3)',  anim: 'fogDrift2', dur: 22 },
+      { top: '20%', h: 200, color: 'rgba(90,105,130,0.22)',  anim: 'fogDrift1', dur: 28, delay: '-5s' },
+      { top: '70%', h: 350, color: 'rgba(150,165,190,0.4)',  anim: 'fogDrift3', dur: 15 },
+      { top: '50%', h: 280, color: 'rgba(120,135,160,0.28)', anim: 'fogDrift2', dur: 25, delay: '-10s' },
+      { top: '80%', h: 220, color: 'rgba(160,175,200,0.45)', anim: 'fogDrift3', dur: 12, delay: '-3s' },
+    ];
+
+    layers.forEach(l => {
+      const el = document.createElement('div');
+      el.className = 'fog-layer';
+      el.style.cssText = `
+        top: ${l.top};
+        height: ${l.h}px;
+        background: radial-gradient(ellipse at center, ${l.color} 0%, transparent 70%);
+        animation: ${l.anim} ${l.dur}s ease-in-out infinite;
+        ${l.delay ? 'animation-delay:' + l.delay + ';' : ''}
+      `;
+      document.body.appendChild(el);
+    });
+
+    // Drifting dust/debris particles
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const particles = [];
+    for (let i = 0; i < 60; i++) {
+      particles.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        r: 0.5 + Math.random() * 1.5,
+        speed: 0.8 + Math.random() * 2,
+        opacity: 0.1 + Math.random() * 0.3,
+        drift: (Math.random() - 0.3) * 0.5
+      });
+    }
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(180,195,215,${p.opacity})`;
+        ctx.fill();
+        p.x += p.speed;
+        p.y += p.drift;
+        if (p.x > canvas.width + 10) {
+          p.x = -10;
+          p.y = Math.random() * canvas.height;
+        }
+        if (p.y < 0 || p.y > canvas.height) {
+          p.y = Math.random() * canvas.height;
+        }
+      });
+      requestAnimationFrame(drawParticles);
+    }
+
+    drawParticles();
+  </script>
+</body>
+</html>
