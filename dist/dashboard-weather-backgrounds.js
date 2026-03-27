@@ -9,7 +9,7 @@
 
 const PLUGIN_NAME = "dashboard-weather-backgrounds";
 const STORAGE_KEY = `${PLUGIN_NAME}-config`;
-const VERSION = "1.0.1";
+const VERSION = "1.0.2";
 
 // Default weather state → background file mappings
 const DEFAULT_MAPPINGS = {
@@ -204,10 +204,15 @@ class DashboardWeatherBackgrounds {
   }
 
   _removeExistingBackground() {
-    // Check both document and shadow root
-    const existing = document.getElementById(`${PLUGIN_NAME}-iframe`) ||
-      document.querySelector("home-assistant")?.shadowRoot?.getElementById(`${PLUGIN_NAME}-iframe`);
-    if (existing) existing.remove();
+    const selectors = [
+      () => document.getElementById(`${PLUGIN_NAME}-iframe`),
+      () => document.querySelector("home-assistant")?.shadowRoot?.getElementById(`${PLUGIN_NAME}-iframe`),
+      () => document.querySelector("home-assistant")?.shadowRoot?.querySelector("home-assistant-main")?.shadowRoot?.getElementById(`${PLUGIN_NAME}-iframe`),
+    ];
+    for (const selector of selectors) {
+      const existing = selector();
+      if (existing) { existing.remove(); break; }
+    }
     this.currentIframe = null;
   }
 
@@ -241,10 +246,18 @@ class DashboardWeatherBackgrounds {
       opacity: ${this.config.opacity} !important;
     `;
 
-    // Insert into home-assistant shadow root so it sits behind the HA UI
-    const haRoot = document.querySelector("home-assistant")?.shadowRoot;
-    if (haRoot) {
-      haRoot.insertBefore(iframe, haRoot.firstChild);
+    // Insert into home-assistant-main's shadow root before ha-drawer
+    // This is the correct injection point to appear behind all HA UI
+    const haMain = document.querySelector("home-assistant")
+      ?.shadowRoot?.querySelector("home-assistant-main")
+      ?.shadowRoot;
+    if (haMain) {
+      const drawer = haMain.querySelector("ha-drawer");
+      if (drawer) {
+        haMain.insertBefore(iframe, drawer);
+      } else {
+        haMain.insertBefore(iframe, haMain.firstChild);
+      }
     } else {
       // Fallback to body if shadow root not available
       document.body.insertBefore(iframe, document.body.firstChild);
