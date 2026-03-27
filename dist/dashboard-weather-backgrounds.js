@@ -204,7 +204,9 @@ class DashboardWeatherBackgrounds {
   }
 
   _removeExistingBackground() {
-    const existing = document.getElementById(`${PLUGIN_NAME}-iframe`);
+    // Check both document and shadow root
+    const existing = document.getElementById(`${PLUGIN_NAME}-iframe`) ||
+      document.querySelector("home-assistant")?.shadowRoot?.getElementById(`${PLUGIN_NAME}-iframe`);
     if (existing) existing.remove();
     this.currentIframe = null;
   }
@@ -239,8 +241,14 @@ class DashboardWeatherBackgrounds {
       opacity: ${this.config.opacity} !important;
     `;
 
-    // Insert before everything else in body
-    document.body.insertBefore(iframe, document.body.firstChild);
+    // Insert into home-assistant shadow root so it sits behind the HA UI
+    const haRoot = document.querySelector("home-assistant")?.shadowRoot;
+    if (haRoot) {
+      haRoot.insertBefore(iframe, haRoot.firstChild);
+    } else {
+      // Fallback to body if shadow root not available
+      document.body.insertBefore(iframe, document.body.firstChild);
+    }
     this.currentIframe = iframe;
 
     console.info(`[${PLUGIN_NAME}] Applied background: ${url}`);
