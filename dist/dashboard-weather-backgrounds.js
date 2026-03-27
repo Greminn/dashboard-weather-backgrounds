@@ -9,7 +9,7 @@
 
 const PLUGIN_NAME = "dashboard-weather-backgrounds";
 const STORAGE_KEY = `${PLUGIN_NAME}-config`;
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 
 // Default weather state → background file mappings
 const DEFAULT_MAPPINGS = {
