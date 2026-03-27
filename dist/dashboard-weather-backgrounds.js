@@ -221,45 +221,54 @@ class DashboardWeatherBackgrounds {
       return;
     }
 
+    // Inject a style tag to make HA transparent and set up layering
+    this._injectStyles();
+
     const iframe = document.createElement("iframe");
     iframe.id = `${PLUGIN_NAME}-iframe`;
     iframe.src = url;
     iframe.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      border: none;
-      z-index: 0;
-      pointer-events: none;
-      opacity: ${this.config.opacity};
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      border: none !important;
+      z-index: 1 !important;
+      pointer-events: none !important;
+      opacity: ${this.config.opacity} !important;
     `;
 
     // Insert before everything else in body
     document.body.insertBefore(iframe, document.body.firstChild);
     this.currentIframe = iframe;
 
-    // Make sure the HA UI sits above the iframe
-    this._ensureUILayering();
-
     console.info(`[${PLUGIN_NAME}] Applied background: ${url}`);
   }
 
-  _ensureUILayering() {
-    // Push the main HA app element above our iframe
-    const haMain = document.querySelector("home-assistant");
-    if (haMain) {
-      haMain.style.position = "relative";
-      haMain.style.zIndex = "1";
-    }
+  _injectStyles() {
+    // Remove any existing style tag
+    const existing = document.getElementById(`${PLUGIN_NAME}-styles`);
+    if (existing) existing.remove();
 
-    // Strip the view's own background so our iframe shows through
-    const viewEl = this._getViewElement();
-    if (viewEl) {
-      viewEl.style.background = "none";
-      viewEl.style.backgroundColor = "transparent";
-    }
+    const style = document.createElement("style");
+    style.id = `${PLUGIN_NAME}-styles`;
+    style.textContent = `
+      html, body {
+        background: transparent !important;
+        background-color: transparent !important;
+      }
+      home-assistant {
+        position: relative !important;
+        z-index: 2 !important;
+        background: transparent !important;
+        background-color: transparent !important;
+      }
+      body > #${PLUGIN_NAME}-iframe {
+        z-index: 1 !important;
+      }
+    `;
+    document.head.appendChild(style);
   }
 }
 
